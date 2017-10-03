@@ -10,6 +10,4 @@ object Main {
     println(s1)
     println(s2)
   }
-
-  println(localAlignment("abc", "bbbbbabcbbbbbbb"))
 }

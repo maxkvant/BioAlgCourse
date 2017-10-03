@@ -44,4 +44,7 @@ object Alignments {
     val (res_n, res_m) = if (local) mx._2 else (n, m)
     (res1(res_n)(res_m).mkString.reverse, res2(res_n)(res_m).mkString.reverse)
   }
+
+  def simpleAlignment: (String, String) => (String, String) = alignment(local = false)
+  def localAlignment: (String, String) => (String, String) = alignment(local = true)
 }
