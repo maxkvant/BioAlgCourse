@@ -1,8 +1,11 @@
+import Alignments.mismatch_score
+
 import scala.io.StdIn
 
 object Alignments {
   val match_score = 1
   val gap_penalty = 1
+  val mismatch_score = 100000
   val inf: Int = 1e9.toInt
 
   def alignment(local: Boolean)(str1: String, str2: String): (String, String) = {
@@ -11,8 +14,8 @@ object Alignments {
     val n = str1.length
     val m = str2.length
 
-    val a = "\n" + str1
-    val b = "\n" + str2
+    val a = "\n" + str1.toLowerCase
+    val b = "\n" + str2.toLowerCase
     val dp: Array[Array[Int]] = Array.fill[Int](n + 1, m + 1)(defult_dp)
     val res1: Array[Array[List[Char]]] = Array.fill[List[Char]](n + 1, m + 1)(Nil)
     val res2: Array[Array[List[Char]]] = Array.fill[List[Char]](n + 1, m + 1)(Nil)
@@ -35,7 +38,10 @@ object Alignments {
 
       relax(i - 1, a(i))(j, '-')(-gap_penalty)
       relax(i, '-')(j - 1, b(j))(-gap_penalty)
-      if (a(i) == b(j)) relax(i - 1, a(i))(j - 1, b(j))(match_score)
+      if (a(i) == b(j))
+        relax(i - 1, a(i))(j - 1, b(j))(match_score)
+      else
+        relax(i - 1, a(i))(j - 1, b(j))(-mismatch_score)
 
       if (dp(i)(j) > mx._1)
         mx = (dp(i)(j), (i, j))
