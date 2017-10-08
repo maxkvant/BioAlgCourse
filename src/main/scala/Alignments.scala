@@ -27,14 +27,6 @@ trait Aligner {
       Array.fill[Int](n + 1, m + 1)(-inf)
     )
 
-    for (i <- 0 to n) {
-      for (j <- 0 to m) {
-        print((dp(gap_closed)(i)(j), dp(gap_a)(i)(j), dp(gap_b)(i)(j)))
-        print(" ")
-      }
-      println()
-    }
-
     dp(gap_closed)(0)(0) = 0
 
     val res1: Array3D[List[Char]] = Array.fill[List[Char]](3, n + 1, m + 1)(Nil)
@@ -68,21 +60,21 @@ trait Aligner {
     }
 
     val (res_n, res_m) = if (local) mx._2 else (n, m)
-    println(dp(gap_closed)(n)(m))
     (res1(gap_closed)(res_n)(res_m).mkString.reverse, res2(gap_closed)(res_n)(res_m).mkString.reverse)
   }
 }
 
-object SimpleAlignment extends Aligner {
+trait SimpleAlignment extends Aligner {
   override def local = false
 }
+object SimpleAlignment extends SimpleAlignment
 
-object LocalAlignment extends Aligner {
+trait LocalAlignment extends Aligner {
   override def local = true
 }
+object LocalAlignment extends LocalAlignment
 
-object WeightedAlignment extends Aligner {
-  override def local = false
+object WeightedAlignment extends SimpleAlignment {
   def unknown_char_penalty = 100
 
   override def weight(c1: Char, c2: Char): Int = {
@@ -104,7 +96,7 @@ object WeightedAlignment extends Aligner {
   }
 }
 
-object AffineGap extends Aligner {
+object AffineGap extends SimpleAlignment {
   override def local = false
   override def gap_open_penalty: Int = 2
   override def mismatch_penalty: Int = 2
