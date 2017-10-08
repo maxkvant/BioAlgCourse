@@ -2,6 +2,7 @@ trait Aligner {
   def match_score = 1
   def gap_penalty = 1
   def mismatch_penalty = 1
+  def gap_open_penalty = 0
 
   def local: Boolean
   def weight(c1: Char, c2: Char): Int = if (c1 == c2) match_score else -mismatch_penalty
@@ -16,36 +17,59 @@ trait Aligner {
 
     val a = "\n" + str1.toLowerCase
     val b = "\n" + str2.toLowerCase
-    val dp: Array[Array[Int]] = Array.fill[Int](n + 1, m + 1)(defult_dp)
-    val res1: Array[Array[List[Char]]] = Array.fill[List[Char]](n + 1, m + 1)(Nil)
-    val res2: Array[Array[List[Char]]] = Array.fill[List[Char]](n + 1, m + 1)(Nil)
+    type Array3D[T] = Array[Array[Array[T]]]
 
-    dp(0)(0) = 0
+    val (gap_closed, gap_a, gap_b) = (0, 1, 2)
+
+    val dp: Array3D[Int] = Array(
+      Array.fill[Int](n + 1, m + 1)(defult_dp),
+      Array.fill[Int](n + 1, m + 1)(-inf),
+      Array.fill[Int](n + 1, m + 1)(-inf)
+    )
+
+    for (i <- 0 to n) {
+      for (j <- 0 to m) {
+        print((dp(gap_closed)(i)(j), dp(gap_a)(i)(j), dp(gap_b)(i)(j)))
+        print(" ")
+      }
+      println()
+    }
+
+    dp(gap_closed)(0)(0) = 0
+
+    val res1: Array3D[List[Char]] = Array.fill[List[Char]](3, n + 1, m + 1)(Nil)
+    val res2: Array3D[List[Char]] = Array.fill[List[Char]](3, n + 1, m + 1)(Nil)
+
     var mx: (Int, (Int, Int)) = (0, (0, 0))
 
     for (i: Int <- 0 to n; j: Int <- 0 to m; if (i, j) != (0, 0)) {
-      def get(i1 :Int, j1: Int): Option[Int] = dp.lift(i1).flatMap(_.lift(j1))
-
-      def relax(i1: Int, char1: Char)(j1: Int, char2: Char)(add: Int): Unit = {
-        get(i1, j1).foreach({ dp_val =>
-          if (dp_val + add >= dp(i)(j)) {
-            dp(i)(j) = dp_val + add
-            res1(i)(j) = char1 :: res1(i1)(j1)
-            res2(i)(j) = char2 :: res2(i1)(j1)
-          }
-        })
+      def relax(k1: Int)(k2: Int)(i1: Int, char1: Char)(j1: Int, char2: Char)(add: Int): Unit = {
+        if (i1 >= 0 && j1 >= 0 && dp(k1)(i1)(j1) + add >= dp(k2)(i)(j)) {
+          dp(k2)(i)(j) = dp(k1)(i1)(j1) + add
+          res1(k2)(i)(j) = char1 :: res1(k1)(i1)(j1)
+          res2(k2)(i)(j) = char2 :: res2(k1)(i1)(j1)
+        }
       }
 
-      relax(i - 1, a(i))(j, '-')(-gap_penalty)
-      relax(i, '-')(j - 1, b(j))(-gap_penalty)
-      relax(i - 1, a(i))(j - 1, b(j))(weight(a(i), b(j)))
+      relax(gap_closed)(gap_closed)(i - 1, a(i))(j, '-')(-gap_open_penalty - gap_penalty)
+      relax(gap_closed)(gap_closed)(i, '-')(j - 1, b(j))(-gap_open_penalty - gap_penalty)
+      relax(gap_closed)(gap_closed)(i - 1, a(i))(j - 1, b(j))(weight(a(i), b(j)))
 
-      if (dp(i)(j) > mx._1)
-        mx = (dp(i)(j), (i, j))
+      relax(gap_closed)(gap_a)(i, '-')(j - 1, b(j))(-gap_open_penalty - gap_penalty)
+      relax(gap_a)(gap_a)(i, '-')(j - 1, b(j))(- gap_penalty)
+      relax(gap_a)(gap_closed)(i, '-')(j - 1, b(j))(- gap_penalty)
+
+      relax(gap_closed)(gap_b)(i - 1, a(i))(j, '-')(-gap_open_penalty - gap_penalty)
+      relax(gap_b)(gap_b)(i - 1, a(i))(j, '-')(-gap_penalty)
+      relax(gap_b)(gap_closed)(i - 1, a(i))(j, '-')(-gap_penalty)
+
+      if (dp(0)(i)(j) > mx._1)
+        mx = (dp(0)(i)(j), (i, j))
     }
 
     val (res_n, res_m) = if (local) mx._2 else (n, m)
-    (res1(res_n)(res_m).mkString.reverse, res2(res_n)(res_m).mkString.reverse)
+    println(dp(gap_closed)(n)(m))
+    (res1(gap_closed)(res_n)(res_m).mkString.reverse, res2(gap_closed)(res_n)(res_m).mkString.reverse)
   }
 }
 
@@ -79,6 +103,13 @@ object WeightedAlignment extends Aligner {
     }
   }
 }
+
+object AffineGap extends Aligner {
+  override def local = false
+  override def gap_open_penalty: Int = 2
+  override def mismatch_penalty: Int = 2
+}
+
 
 /*test
 tccCAGTTATGTCAGgggacacgagcatgcagagac
