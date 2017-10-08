@@ -1,14 +1,14 @@
-import Alignments.mismatch_score
+trait Aligner {
+  def match_score = 1
+  def gap_penalty = 1
+  def mismatch_penalty = 1
 
-import scala.io.StdIn
+  def local: Boolean
+  def weight(c1: Char, c2: Char): Int = if (c1 == c2) match_score else -mismatch_penalty
 
-object Alignments {
-  val match_score = 1
-  val gap_penalty = 1
-  val mismatch_score = 100000
-  val inf: Int = 1e9.toInt
+  private val inf: Int = 1e9.toInt
 
-  def alignment(local: Boolean)(str1: String, str2: String): (String, String) = {
+  def align(str1: String, str2: String): (String, String) = {
     val defult_dp = if (local) 0 else -inf
 
     val n = str1.length
@@ -38,10 +38,7 @@ object Alignments {
 
       relax(i - 1, a(i))(j, '-')(-gap_penalty)
       relax(i, '-')(j - 1, b(j))(-gap_penalty)
-      if (a(i) == b(j))
-        relax(i - 1, a(i))(j - 1, b(j))(match_score)
-      else
-        relax(i - 1, a(i))(j - 1, b(j))(-mismatch_score)
+      relax(i - 1, a(i))(j - 1, b(j))(weight(a(i), b(j)))
 
       if (dp(i)(j) > mx._1)
         mx = (dp(i)(j), (i, j))
@@ -50,7 +47,40 @@ object Alignments {
     val (res_n, res_m) = if (local) mx._2 else (n, m)
     (res1(res_n)(res_m).mkString.reverse, res2(res_n)(res_m).mkString.reverse)
   }
-
-  def simpleAlignment: (String, String) => (String, String) = alignment(local = false)
-  def localAlignment: (String, String) => (String, String) = alignment(local = true)
 }
+
+object SimpleAlignment extends Aligner {
+  override def local = false
+}
+
+object LocalAlignment extends Aligner {
+  override def local = true
+}
+
+object WeightedAlignment extends Aligner {
+  override def local = false
+  def unknown_char_penalty = 100
+
+  override def weight(c1: Char, c2: Char): Int = {
+    val charMap: Map[Char, Int] = Map('a' -> 0, 'c' -> 1, 'g' -> 2, 't' -> 3)
+    val weights: Array[Array[Int]] = Array(
+      Array( 1, -1, -1, -1),
+      Array(-1,  1, -1, -1),
+      Array(-1, -1,  1, -1),
+      Array(-1, -1, -1,  1)
+    )
+    (for {
+      a <- charMap.get(c1)
+      b <- charMap.get(c2)
+    } yield weights(a)(b))
+    match {
+      case Some(x) => x
+      case None => -unknown_char_penalty
+    }
+  }
+}
+
+/*test
+tccCAGTTATGTCAGgggacacgagcatgcagagac
+aattgccgccgtcgttttcagCAGTTATGTCAGatc
+*/
