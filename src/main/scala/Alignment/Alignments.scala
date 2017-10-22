@@ -1,3 +1,5 @@
+package Alignment
+
 trait Aligner {
   def match_score = 1
   def gap_penalty = 1

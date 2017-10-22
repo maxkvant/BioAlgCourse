@@ -1,3 +1,5 @@
+package Alignment
+
 import scala.io.StdIn
 
 object Main {
