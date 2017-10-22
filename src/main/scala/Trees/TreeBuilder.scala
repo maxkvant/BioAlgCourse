@@ -3,7 +3,7 @@ package Trees
 trait TreeBuilder {
   def build(dist: Array[Array[Double]], labels: Array[String]): Tree
 
-  def checkSizes(dist: Array[Array[Double]], labels: Array[String]): Unit = {
+  protected def checkSizes(dist: Array[Array[Double]], labels: Array[String]): Unit = {
     require(labels.length > 0)
     require(labels.length == dist.length)
     dist.foreach(subdist => require(subdist.length == dist.length))
