@@ -18,8 +18,8 @@ object NJ extends TreeBuilder {
       val (minD, mI, mJ, i, j) = (for {
         i <- roots
         j <- roots
-        mI = distSum(i) / (n - 2)
-        mJ = distSum(j) / (n - 2)
+        mI = (distSum(i) - d(i)(j)) / (n - 2)
+        mJ = (distSum(j) - d(i)(j)) / (n - 2)
         if i < j
       } yield (d(i)(j) - mI - mJ, mI, mJ, i, j)).min
 
