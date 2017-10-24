@@ -1,13 +1,15 @@
 package Trees
 
+import Trees.TreeBuilder.Matrix
+
 import scala.collection.mutable
 import scala.util.Random
 
 object NJ extends TreeBuilder {
-  override def build(dist: Array[Array[Double]], labels: Array[String]): Tree = {
+  override def build(dist: Matrix, labels: Array[String]): Tree = {
     checkSizes(dist, labels)
 
-    val d: Array[Array[Double]] = dist.map(_.clone)
+    val d: Matrix = dist.map(_.clone)
     val roots: mutable.Buffer[Int] = labels.indices.toBuffer[Int]
     val trees: Array[RootedTree] = labels.map(name => RootedTree(Seq(), name))
 
@@ -18,9 +20,9 @@ object NJ extends TreeBuilder {
       val (minD, mI, mJ, i, j) = (for {
         i <- roots
         j <- roots
-        mI = (distSum(i) - d(i)(j)) / (n - 2)
-        mJ = (distSum(j) - d(i)(j)) / (n - 2)
         if i < j
+        mI = distSum(i) / (n - 2)
+        mJ = distSum(j) / (n - 2)
       } yield (d(i)(j) - mI - mJ, mI, mJ, i, j)).min
 
       val v: Int = i
@@ -28,7 +30,7 @@ object NJ extends TreeBuilder {
       roots -= j
 
       for (t <- roots) {
-        val newD = 0.5 * (d(i)(t) + d(j)(t) - d(i)(j))
+        val newD = 0.5 * (d(i)(t) + d(t)(j) - d(i)(j))
         d(t)(v) = newD
         d(v)(t) = newD
       }

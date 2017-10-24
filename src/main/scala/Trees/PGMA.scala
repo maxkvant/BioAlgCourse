@@ -1,6 +1,7 @@
 package Trees
 
 import Trees.Conversions._
+import Trees.TreeBuilder.Matrix
 
 import scala.collection.mutable
 
@@ -15,9 +16,9 @@ trait PGMA extends TreeBuilder {
     Node(newTree, a.size + b.size, newHeight)
   }
 
-  override def build(dist: Array[Array[Double]], labels: Array[String]): Tree = {
+  override def build(dist: Matrix, labels: Array[String]): Tree = {
     checkSizes(dist, labels)
-    val d: Array[Array[Double]] = dist.map(_.clone)
+    val d: Matrix = dist.map(_.clone)
 
     val nodes: Array[Node] = labels.map(name => Node(name: Leaf))
     val roots: mutable.Buffer[Int] = labels.indices.toBuffer[Int]
