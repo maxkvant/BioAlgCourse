@@ -103,6 +103,8 @@ case class CoinHMM(pSymSym: Double, pUnsymUnsym: Double) {
 
     def res(t: Int) = (for (i <- 0 until n) yield dpBefore(i)(t) * dpAfter(i)(t) / coinsP).toList
 
+    println(res(0))
+    println(res(1))
     res(0)
   }
 
