@@ -16,11 +16,13 @@ object Main {
     val markovModelMatch = Array(
       Array(0.8, 0.1, 0.1),
       Array(0.5, 0.5, 0.0),
-      Array(0.5, 0.0, 5.0)
+      Array(0.5, 0.0, 0.5)
     )
-    val mismatchRow = Array(0.1, 0.45, 0.45)
+    val mismatchRow = Array(0.2, 0.4, 0.4)
     val aligner = Aligner(markovModelMatch, mismatchRow, Array(0.3, 0.3, 0.3))
-    println(aligner.Viterbi(s, t))
+    val (s1, t1) = aligner.Viterbi(s, t)
+    println(s1)
+    println(t1)
     val resFB = aligner.FB(s, t)
     println("match")
     printMatrix(resFB.map(_.map(_.apply(0))))
