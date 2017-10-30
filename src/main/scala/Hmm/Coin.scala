@@ -1,5 +1,7 @@
 package Hmm
 
+import Hmm.Main.Matrix
+
 sealed trait Coin
 
 case object Head extends Coin
@@ -27,8 +29,6 @@ case class CoinHMM(pSymSym: Double, pUnsymUnsym: Double) {
   )
 
   private val toState: Array[State] = Array(Sym, Unsym)
-
-  type Matrix[T] = Array[Array[T]]
 
   def Viterbi(coins: List[Coin]): List[State] = {
     val coinsInt: List[Int] = coins.map({
@@ -103,11 +103,6 @@ case class CoinHMM(pSymSym: Double, pUnsymUnsym: Double) {
 
     def res(t: Int) = (for (i <- 0 until n) yield dpBefore(i)(t) * dpAfter(i)(t) / coinsP).toList
     res(0)
-  }
-
-  private def printMatrix[T](matrix: Matrix[T]): Unit = {
-    matrix.foreach(x => println(x.mkString(" ")))
-    println()
   }
 }
 
