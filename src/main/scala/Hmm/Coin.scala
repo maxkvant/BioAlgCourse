@@ -42,6 +42,7 @@ case class CoinHMM(pSymSym: Double, pUnsymUnsym: Double) {
       0.5 * coinToP(0)(coinsInt.head),
       0.5 * coinToP(1)(coinsInt.head)
     )
+    
     val prev: Matrix[List[State]] = Array.fill(n, 2)(Nil)
     prev(0) = toState.map(x => List(x))
 
