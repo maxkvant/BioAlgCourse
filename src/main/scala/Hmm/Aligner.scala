@@ -2,29 +2,23 @@ package Hmm
 
 import Hmm.Main.Matrix
 
-case class Aligner(markovModelMatch: Matrix[Double], mismatchRow: Array[Double], initProbability: Array[Double]) {
+case class Aligner(markovModelMatch: Matrix[Double], markovModelMismatch: Matrix[Double], initProbability: Array[Double]) {
   type Array3D[T] = Array[Array[Array[T]]]
 
   require(markovModelMatch.length == 3)
   markovModelMatch.foreach(row => require(row.length == 3))
-  require(mismatchRow.length == 3)
-  require(initProbability.length == 3)
 
-  private val markovModelMismatch: Matrix[Double] = Array(
-    mismatchRow,
-    markovModelMatch(1),
-    markovModelMatch(2)
-  )
+  require(markovModelMismatch.length == 3)
+  markovModelMismatch.foreach(row => require(row.length == 3))
+
 
   private val moves: Array[(Int, Int)] = Array((1, 1), (1, 0), (0, 1))
 
   def calculateCost(s1: String, i: Int)(s2: String, j: Int)(moveI1: Int)(moveI2: Int): Double = {
-    (s1.lift(i), s2.lift(j)) match {
-      case (Some(c1), Some(c2)) =>
-        val markovModel = if (s1(i) == s2(j)) markovModelMatch else markovModelMismatch
-        markovModel(moveI1)(moveI2)
-      case _ => 0
-    }
+    if (1 <= i && i < s1.length && 1 <= j && j < s2.length) {
+      val markovModel = if (s1(i) == s2(j)) markovModelMatch else markovModelMismatch
+      markovModel(moveI1)(moveI2)
+    } else 0
   }
 
   def Viterbi(str1: String, str2: String): (String, String) = {
@@ -59,8 +53,8 @@ case class Aligner(markovModelMatch: Matrix[Double], mismatchRow: Array[Double],
   }
 
   def FB(str1: String, str2: String): Array3D[Double] = {
-    val s1 = " " + str1
-    val s2 = " " + str2
+    val s = " " + str1
+    val t = " " + str2
     val n = str1.length
     val m = str2.length
 
@@ -74,7 +68,7 @@ case class Aligner(markovModelMatch: Matrix[Double], mismatchRow: Array[Double],
             moveI1 <- moves.indices
             (i1: Int, j1: Int) = (i2 - moves(moveI2)._1, j2 - moves(moveI2)._2)
             dpValue: Double = if (i1 >= 0 && j1 >= 0) dpBefore(i1)(j1)(moveI1) else 0
-            cost: Double = calculateCost(s1, i2)(s2, j2)(moveI1)(moveI2)
+            cost: Double = calculateCost(s, i2)(t, j2)(moveI1)(moveI2)
           } yield cost * dpValue).sum
       }
     }
@@ -89,7 +83,7 @@ case class Aligner(markovModelMatch: Matrix[Double], mismatchRow: Array[Double],
             moveI2 <- moves.indices
             (i2: Int, j2: Int) = (i1 + moves(moveI2)._1, j1 + moves(moveI2)._2)
             dpValue: Double = if (i2 <= n && j2 <= m) dpAfter(i2)(j2)(moveI1) else 0
-            cost: Double = calculateCost(s1, i2)(s2, j2)(moveI1)(moveI2)
+            cost: Double = calculateCost(s, i2)(t, j2)(moveI1)(moveI2)
           } yield cost * dpValue).sum
       }
     }

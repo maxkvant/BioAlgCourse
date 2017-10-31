@@ -11,15 +11,21 @@ object Main {
   }
 
   def main(args: Array[String]): Unit = {
-    val s = "AGA"
-    val t = "AGAGA"
+    val s = "BGB"
+    val t = "BAGAB"
     val markovModelMatch = Array(
       Array(0.8, 0.1, 0.1),
-      Array(0.5, 0.5, 0.0),
-      Array(0.5, 0.0, 0.5)
+      Array(0.8, 0.2, 0.0),
+      Array(0.8, 0.0, 0.2)
     )
-    val mismatchRow = Array(0.2, 0.4, 0.4)
-    val aligner = Aligner(markovModelMatch, mismatchRow, Array(0.3, 0.3, 0.3))
+
+    val markovModelMismatch = Array(
+      Array(1 / 3.0, 1 / 3.0, 1 / 3.0),
+      Array(0.4, 0.6, 0.0),
+      Array(0.4, 0.0, 0.6)
+    )
+
+    val aligner = Aligner(markovModelMatch, markovModelMismatch, Array(1 / 3.0, 1 / 3.0, 1 / 3.0))
     val (s1, t1) = aligner.Viterbi(s, t)
     println(s1)
     println(t1)
