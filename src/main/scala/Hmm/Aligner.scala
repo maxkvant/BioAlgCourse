@@ -12,14 +12,17 @@ case class Aligner(markovModelMatch: Matrix[Double], markovModelMismatch: Matrix
   require(markovModelMismatch.length == 3)
   markovModelMismatch.foreach(row => require(row.length == 3))
 
-  private val moves: Array[(Int, Int)] = Array((1, 1), (1, 0), (0, 1))
+  import Aligner._
 
-  def calculateCost(i: Int, j: Int)(moveI1: Int)(moveI2: Int)(implicit strings: (String, String)): Double = {
+  def cost(i: Int, j: Int)(moveI1: Int)(moveI2: Int)(implicit strings: (String, String)): Double = {
     val (s, t) = strings
     val markovModel = (s.lift(i - 1), t.lift(j - 1)) match {
       case (Some(c1), Some(c2)) => if (c1 == c2) markovModelMatch else markovModelMismatch
       case _ => markovModelMismatch
     }
+      val (di, dj) = moves(moveI2)
+    val (i1, j1) = (i - di, j - dj)
+    val res = markovModel(moveI1)(moveI2)
     markovModel(moveI1)(moveI2)
   }
 
@@ -38,11 +41,12 @@ case class Aligner(markovModelMatch: Matrix[Double], markovModelMismatch: Matrix
         val (dpMax, i1, j1, moveI1) =
           (for {
             moveI1 <- moves.indices
-            (i1: Int, j1: Int) = (i2 - moves(moveI2)._1, j2 - moves(moveI2)._2)
+            (di, dj) = moves(moveI2)
+            (i1, j1) = (i2 - di, j2 - dj)
             dpValue: Double = if (i1 >= 0 && j1 >= 0) dp(i1)(j1)(moveI1) else 0
-            cost: Double = calculateCost(i2, j2)(moveI1)(moveI2)
-          } yield (cost * dpValue, i1, j1, moveI1)).max
-        println(s"$i2 $j2 <- $i1 $j1 | $dpMax")
+          } yield (cost(i2, j2)(moveI1)(moveI2) * dpValue, i1, j1, moveI1))
+            .max
+
         if (i1 >= 0 && j1 >= 0) {
           dp(i2)(j2)(moveI2) = dpMax
           prev1(i2)(j2)(moveI2) = (if (moves(moveI2)._1 == 1) str1(i2 - 1) else '-') :: prev1(i1)(j1)(moveI1)
@@ -51,9 +55,6 @@ case class Aligner(markovModelMatch: Matrix[Double], markovModelMismatch: Matrix
       }
     }
     val (dpMax, maxI) = (for (i <- dp(n)(m).indices) yield (dp(n)(m)(i), i)).max
-    for (l <- 0 until 3) {
-      printMatrix(dp.map(_.map(_.apply(l))))
-    }
     (prev1(n)(m)(maxI).reverse.mkString, prev2(n)(m)(maxI).reverse.mkString)
   }
 
@@ -64,7 +65,6 @@ case class Aligner(markovModelMatch: Matrix[Double], markovModelMismatch: Matrix
 
     val dpBefore: Array3D[Double] = Array.fill(n + 1, m + 1, 3)(0.0)
     dpBefore(0)(0) = initProbability.clone
-    println(dpBefore(0)(0).toList)
 
     for (i2 <- 0 to n;
          j2 <- 0 to m
@@ -75,12 +75,13 @@ case class Aligner(markovModelMatch: Matrix[Double], markovModelMismatch: Matrix
               (di, dj) = moves(moveI2)
               (i1, j1) = (i2 - di, j2 - dj)
               if i1 >= 0 && j1 >= 0
-            } yield dpBefore(i1)(j1)(moveI1) * calculateCost(i2, j2)(moveI1)(moveI2))
+            } yield dpBefore(i1)(j1)(moveI1) * cost(i2, j2)(moveI1)(moveI2))
               .sum
     }
 
     val dpAfter: Array3D[Double] = Array.fill(n + 1, m + 1, 3)(0.0)
     dpAfter(n)(m) = Array(1.0, 1.0, 1.0)
+    println()
 
     for (i1 <- n to 0 by -1;
          j1 <- m to 0 by -1
@@ -91,30 +92,56 @@ case class Aligner(markovModelMatch: Matrix[Double], markovModelMismatch: Matrix
               (di, dj) = moves(moveI2)
               (i2, j2) = (i1 + di, j1 + dj)
               if i2 <= n && j2 <= m
-            } yield calculateCost(i2, j2)(moveI1)(moveI2) * dpAfter(i2)(j2)(moveI2))
+            } yield cost(i2, j2)(moveI1)(moveI2) * dpAfter(i2)(j2)(moveI2))
               .sum
     }
 
-    for (l <- 0 until 3) {
-      printMatrix(dpBefore.map(_.map(_.apply(l))))
-    }
 
-    println("-" * 50)
 
-    for (l <- 0 until 3) {
-      printMatrix(dpAfter.map(_.map(_.apply(l))))
-    }
-
-    println("-" * 50)
-
-    val sumP: Double = dpBefore(n)(m).sum
-
+    val dp = Array.fill(n + 1, m + 1, 3)(0.0)
     val res = Array.fill(n + 1, m + 1, 3)(0.0)
+
     for (i <- 0 to n; j <- 0 to m) {
-      res(i)(j) = (dpAfter(i)(j) zip dpBefore(i)(j)).map(p => p._1 * p._2)
-      val sum = { x: Double => if (x < 1e-4) x else 1 } apply res(i)(j).sum
-      res(i)(j) = res(i)(j).map(_ / sum)
+      dp(i)(j) = (dpAfter(i)(j) zip dpBefore(i)(j)).map({case (a, b) => a * b})
+      val sum = if (dp(i)(j).sum != 0) dp(i)(j).sum else 1.0
+      res(i)(j) = dp(i)(j).map(_ / sum)
     }
+
+
+    val norm1 = dp(n)(m).sum
+    val resMatch = dp.map(_.map(_.apply(1) / norm1))
+    printMatrix(resMatch)
+
+    checkDp(dp)
     res
   }
+
+  private def checkDp(dp: Array3D[Double]): Unit = {
+    for (s: Int <- 0 to dp(0).length + dp.length - 2) {
+      val cur1: Double = (for {
+        i: Int <- 0 to s
+        j = s - i
+        if i < dp.length && j < dp(i).length
+        b = () == print(i, j)
+      } yield dp(i)(j).sum).sum
+      println("|")
+
+      val cur2 = (for {
+        i: Int <- 0 to (s+1)
+        j = (s+1) - i
+        if i < dp.length && j < dp(i).length
+        b = () == print(i, j)
+      } yield dp(i)(j)(0)).sum
+      println()
+
+
+
+      println(s"$s: ${cur1+cur2}")
+      println()
+    }
+  }
+}
+
+object Aligner {
+  val moves: Array[(Int, Int)] = Array((1, 1), (1, 0), (0, 1))
 }

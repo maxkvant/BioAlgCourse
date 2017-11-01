@@ -1,21 +1,24 @@
 package Hmm
 
 import scala.io.StdIn
+import Aligner.moves
 
 object Main {
   type Matrix[T] = Array[Array[T]]
 
   def printMatrix(matrix: Matrix[Double]): Unit = {
     matrix.foreach({lst =>
-      lst.foreach(x => print(f"$x%.10f "))
+      lst.foreach(x => print(f"$x%.3f "))
       println()
     })
     println()
   }
 
   def main(args: Array[String]): Unit = {
-    val s = "acgt"
-    val t = "tgca"
+    val s = "aaa"
+    val t = "aaa"
+
+
     val markovModelMatch = Array(
       Array(0.8, 0.1, 0.1),
       Array(0.8, 0.2, 0.0),
@@ -34,9 +37,12 @@ object Main {
     println(t1)
     val resFB = aligner.FB(s, t)
     val tableNames = Array("match", "gap", "gap")
-    for (p <- tableNames.zipWithIndex) {
-      println(p._1)
-      printMatrix(resFB.map(_.map(_.apply(p._2))))
+    for ((name, i) <- tableNames.zipWithIndex) {
+      println(name)
+      val curMatrix = resFB.map(_.map(_.apply(i)))
+      val (di, dj) = moves(i)
+      val matrix = curMatrix.map(_.drop(dj)).drop(di)
+      printMatrix(matrix)
     }
   }
 
