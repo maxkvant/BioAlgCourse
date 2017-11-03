@@ -3,27 +3,24 @@ package Hmm
 import Hmm.Main.Matrix
 import Hmm.Main.printMatrix
 
-case class Aligner(markovModelMatch: Matrix[Double], markovModelMismatch: Matrix[Double], initProbability: Array[Double]) {
+case class Aligner(markovModel: Matrix[Double], initProbability: Array[Double], mismatchGenP: Double, gapGenP: Double) {
   type Array3D[T] = Array[Array[Array[T]]]
 
-  require(markovModelMatch.length == 3)
-  markovModelMatch.foreach(row => require(row.length == 3))
-
-  require(markovModelMismatch.length == 3)
-  markovModelMismatch.foreach(row => require(row.length == 3))
+  require(markovModel.length == 3)
+  markovModel.foreach(row => require(row.length == 3))
 
   import Aligner._
 
   def cost(i: Int, j: Int)(moveI1: Int)(moveI2: Int)(implicit strings: (String, String)): Double = {
     val (s, t) = strings
-    val markovModel = (s.lift(i - 1), t.lift(j - 1)) match {
-      case (Some(c1), Some(c2)) => if (c1 == c2) markovModelMatch else markovModelMismatch
-      case _ => markovModelMismatch
+    val (di, dj) = moves(moveI2)
+    val genCost = (s.lift(i - 1), t.lift(j - 1), moveI2) match {
+      case (_, _, 1) => gapGenP
+      case (_, _, 2) => gapGenP
+      case (Some(c1), Some(c2), 0) => if (c1 == c2) 1.0 else mismatchGenP
+      case _ => 1.0
     }
-      val (di, dj) = moves(moveI2)
-    val (i1, j1) = (i - di, j - dj)
-    val res = markovModel(moveI1)(moveI2)
-    markovModel(moveI1)(moveI2)
+    markovModel(moveI1)(moveI2) * genCost
   }
 
   def Viterbi(str1: String, str2: String): (String, String) = {
@@ -58,8 +55,8 @@ case class Aligner(markovModelMatch: Matrix[Double], markovModelMismatch: Matrix
     (prev1(n)(m)(maxI).reverse.mkString, prev2(n)(m)(maxI).reverse.mkString)
   }
 
-  def FB(str1: String, str2: String): Array3D[Double] = {
-    implicit val strings = (str1, str2)
+  def FB(str1: String, str2: String): Matrix[Double] = {
+    implicit val strings: (String, String) = (str1, str2)
     val n = str1.length
     val m = str2.length
 
@@ -81,7 +78,6 @@ case class Aligner(markovModelMatch: Matrix[Double], markovModelMismatch: Matrix
 
     val dpAfter: Array3D[Double] = Array.fill(n + 1, m + 1, 3)(0.0)
     dpAfter(n)(m) = Array(1.0, 1.0, 1.0)
-    println()
 
     for (i1 <- n to 0 by -1;
          j1 <- m to 0 by -1
@@ -96,49 +92,44 @@ case class Aligner(markovModelMatch: Matrix[Double], markovModelMismatch: Matrix
               .sum
     }
 
-
-
     val dp = Array.fill(n + 1, m + 1, 3)(0.0)
-    val res = Array.fill(n + 1, m + 1, 3)(0.0)
 
     for (i <- 0 to n; j <- 0 to m) {
       dp(i)(j) = (dpAfter(i)(j) zip dpBefore(i)(j)).map({case (a, b) => a * b})
-      val sum = if (dp(i)(j).sum != 0) dp(i)(j).sum else 1.0
-      res(i)(j) = dp(i)(j).map(_ / sum)
     }
 
-
     val norm1 = dp(n)(m).sum
-    val resMatch = dp.map(_.map(_.apply(1) / norm1))
-    printMatrix(resMatch)
 
-    checkDp(dp)
+    val res = dp.map(_.map(_.apply(0) / norm1))
     res
   }
 
-  private def checkDp(dp: Array3D[Double]): Unit = {
-    for (s: Int <- 0 to dp(0).length + dp.length - 2) {
-      val cur1: Double = (for {
-        i: Int <- 0 to s
-        j = s - i
-        if i < dp.length && j < dp(i).length
-        b = () == print(i, j)
-      } yield dp(i)(j).sum).sum
-      println("|")
+  def BacktrackFB(s: String, t: String): Matrix[Double] = {
+    implicit val strings = (s, t)
+    println("backtrackFB")
 
-      val cur2 = (for {
-        i: Int <- 0 to (s+1)
-        j = (s+1) - i
-        if i < dp.length && j < dp(i).length
-        b = () == print(i, j)
-      } yield dp(i)(j)(0)).sum
-      println()
-
-
-
-      println(s"$s: ${cur1+cur2}")
-      println()
+    val n = s.length
+    val m = t.length
+    val ans: Matrix[Double] = Array.fill(n, m)(0.0)
+    var sum: Double = 0
+    def dfs(i: Int, j: Int, moveI1: Int, p: Double, matches: List[(Int,Int)]): Unit = {
+      if (i == n && j == m) {
+        sum += p
+        for ((i, j) <- matches) {
+          ans(i)(j) += p
+        }
+      }
+      for (((di, dj), moveI2) <- moves.zipWithIndex if i + di <= n && j + dj <= m) {
+        val matches2 = if (moveI2 == 0) (i, j) :: matches else matches
+        dfs(i + di, j + dj, moveI2, p * cost(i + di, j + dj)(moveI1)(moveI2), matches2)
+      }
     }
+    for (i <- moves.indices) {
+      dfs(0, 0, i, initProbability(i), Nil)
+    }
+    val res = ans.map(_.map(_ / sum))
+    printMatrix(res)
+    res
   }
 }
 

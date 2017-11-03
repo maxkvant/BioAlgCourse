@@ -8,42 +8,35 @@ object Main {
 
   def printMatrix(matrix: Matrix[Double]): Unit = {
     matrix.foreach({lst =>
-      lst.foreach(x => print(f"$x%.3f "))
+      lst.foreach(x => print(f"$x%.8f "))
       println()
     })
     println()
   }
 
   def main(args: Array[String]): Unit = {
-    val s = "aaa"
-    val t = "aaa"
+    val s = "acgt"
+    val t = "tgca"
 
 
-    val markovModelMatch = Array(
-      Array(0.8, 0.1, 0.1),
-      Array(0.8, 0.2, 0.0),
-      Array(0.8, 0.0, 0.2)
-    )
-
-    val markovModelMismatch = Array(
-      Array(1 / 3.0, 1 / 3.0, 1 / 3.0),
+    val markovModel = Array(
+      Array(0.4, 0.3, 0.3),
       Array(0.4, 0.6, 0.0),
       Array(0.4, 0.0, 0.6)
     )
 
-    val aligner = Aligner(markovModelMatch, markovModelMismatch, Array(1 / 3.0, 1 / 3.0, 1 / 3.0))
+    val aligner = Aligner(markovModel,
+                          initProbability = Array(1 / 3.0, 1 / 3.0, 1 / 3.0),
+                          mismatchGenP = 0.1,
+                          gapGenP = 0.3)
+
     val (s1, t1) = aligner.Viterbi(s, t)
     println(s1)
     println(t1)
-    val resFB = aligner.FB(s, t)
-    val tableNames = Array("match", "gap", "gap")
-    for ((name, i) <- tableNames.zipWithIndex) {
-      println(name)
-      val curMatrix = resFB.map(_.map(_.apply(i)))
-      val (di, dj) = moves(i)
-      val matrix = curMatrix.map(_.drop(dj)).drop(di)
-      printMatrix(matrix)
-    }
+    val resFB: Matrix[Double] = aligner.FB(s, t)
+    printMatrix(resFB.map(_.drop(1)).drop(1))
+
+    aligner.BacktrackFB(s, t)
   }
 
   def mainCoin(): Unit = {
