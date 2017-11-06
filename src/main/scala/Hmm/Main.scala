@@ -1,11 +1,9 @@
 package Hmm
 
 import scala.io.StdIn
-import Aligner.moves
+import Aligner.{Matrix, moves}
 
 object Main {
-  type Matrix[T] = Array[Array[T]]
-
   def printMatrix(matrix: Matrix[Double]): Unit = {
     matrix.foreach({lst =>
       lst.foreach(x => print(f"$x%.8f "))

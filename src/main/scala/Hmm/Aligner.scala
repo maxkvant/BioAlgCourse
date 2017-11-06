@@ -1,7 +1,12 @@
 package Hmm
 
-import Hmm.Main.Matrix
+import Hmm.Aligner.Matrix
 import Hmm.Main.printMatrix
+
+object Aligner {
+  val moves: Seq[(Int, Int)] = List((1, 1), (1, 0), (0, 1))
+  type Matrix[T] = Array[Array[T]]
+}
 
 case class Aligner(markovModel: Matrix[Double], initProbability: Array[Double], mismatchGenP: Double, gapGenP: Double) {
   type Array3D[T] = Array[Array[Array[T]]]
@@ -24,7 +29,7 @@ case class Aligner(markovModel: Matrix[Double], initProbability: Array[Double], 
   }
 
   def Viterbi(str1: String, str2: String): (String, String) = {
-    implicit val strings = (str1, str2)
+    implicit val strings: (String, String) = (str1, str2)
     val n = str1.length
     val m = str2.length
 
@@ -105,7 +110,7 @@ case class Aligner(markovModel: Matrix[Double], initProbability: Array[Double], 
   }
 
   def BacktrackFB(s: String, t: String): Matrix[Double] = {
-    implicit val strings = (s, t)
+    implicit val strings: (String, String) = (s, t)
     println("backtrackFB")
 
     val n = s.length
@@ -131,8 +136,4 @@ case class Aligner(markovModel: Matrix[Double], initProbability: Array[Double], 
     printMatrix(res)
     res
   }
-}
-
-object Aligner {
-  val moves: Array[(Int, Int)] = Array((1, 1), (1, 0), (0, 1))
 }
