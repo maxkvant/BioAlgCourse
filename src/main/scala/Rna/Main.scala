@@ -1,13 +1,12 @@
 package Rna
 
-import Hmm.Aligner
-import Hmm.Aligner.Matrix
-import Hmm.Main.printMatrix
-
 object Main {
   def main(args: Array[String]): Unit = {
     val s = "AAAAAAAAAAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGGGGGGGGGGCCCCCCCCCCCCCCCCCCCUUUUUUUUUUUUUUUUUUUUUUUUUUU"
-    Nussinov(s).foreach({case (i, j) => println(s"${s(i)} $i $j ${s(j)}")})
+    val t = "AAACAUGAGGAUUACCCAUGU"
+    val res = Nussinov(t)
+    println(res.length)
+    res.foreach({case (i, j) => println(s"${s(i)} ${i+1} ${j+1} ${s(j)}")})
   }
 
 }

@@ -1,15 +1,12 @@
 package Rna
 
 object Nussinov {
-  def complement(a: Char, b: Char): Boolean = {
-    (a, b) match {
-      case ('A', 'U') => true
-      case ('U', 'A') => true
-      case ('G', 'C') => true
-      case ('C', 'G') => true
-      case _ => false
-    }
-  }
+  def complement(a: Char, b: Char): Boolean = Set(
+    ('A', 'U'),
+    ('U', 'A'),
+    ('G', 'C'),
+    ('C', 'G')
+  ).apply(a, b)
 
   def apply(s: String): List[(Int, Int)] = {
     val n = s.length
