@@ -1,6 +1,6 @@
 package Hmm
 
-import Hmm.Main.Matrix
+import Hmm.Aligner.Matrix
 
 sealed trait Coin
 
