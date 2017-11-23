@@ -2,8 +2,11 @@ package DebrujinGraph
 
 object Main {
   def main(args: Array[String]): Unit = {
-    val graph = new DebrujinGraph(3)
+    val graph = new DebrujinGraph(5)
     println(graph.str)
-    graph.toDot()
+    graph.cycle.zipWithIndex.foreach({ case (v, i) =>
+      println(" " * i + graph.VString(v))
+    })
+    graph.saveDot()
   }
 }

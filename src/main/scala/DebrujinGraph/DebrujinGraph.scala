@@ -10,7 +10,8 @@ import scala.collection.mutable.ArrayBuffer
 
 
 class DebrujinGraph(n1: Int) {
-  type V = Int
+
+  import DebrujinGraph._
   val n: Int = n1 - 1
   val vertices: List[V] = (0 until (1 << n)).toList
   val edges: List[List[V]] = vertices.map(v => List(v >> 1, (v >> 1) + (1 << (n - 1))))
@@ -41,7 +42,7 @@ class DebrujinGraph(n1: Int) {
     } yield str2.substring(i, i + n1 + 1)
   }.toSet.size == (1 << n1))
 
-  def toDot(): Unit = {
+  def saveDot(): Unit = {
     val cycleStr = cycle.map(VString)
     val nodes = vertices.map(VString).map(v => v -> mutNode(v)).toMap
 
@@ -64,4 +65,8 @@ class DebrujinGraph(n1: Int) {
     val s = v.toBinaryString.reverse
     s + "0" * (n - s.length)
   }
+}
+
+object DebrujinGraph {
+  type V = Int
 }
